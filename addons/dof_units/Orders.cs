@@ -88,7 +88,7 @@ public sealed class AttackMoveCommand(Vector3 target) : UnitCommand
 
     public override bool Execute(Unit unit, double delta, ref UnitIntent intent)
     {
-        if (unit.Weapon is not null && UnitRegistry.FindNearestEnemy(unit, unit.EngageRange) is { } enemy)
+        if (unit.Weapon is not null && unit.NearestEnemyInRange() is { } enemy)
         {
             Engage(unit, enemy, ref intent);
             return false;

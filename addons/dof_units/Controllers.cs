@@ -27,7 +27,7 @@ public class OrderController : IUnitController
         unit.Commands.Tick(unit, delta, ref intent);
 
         if (unit.Commands.Current is null && unit.AutoEngageWhenIdle && unit.Weapon is not null
-            && UnitRegistry.FindNearestEnemy(unit, unit.EngageRange) is { } enemy)
+            && unit.NearestEnemyInRange() is { } enemy)
         {
             UnitCommand.Engage(unit, enemy, ref intent);
         }

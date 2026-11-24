@@ -35,6 +35,12 @@ public partial class Unit : CharacterBody3D, ICombatant
     /// <summary>Share of weapon range at which the AI stops closing in and starts shooting.</summary>
     [Export(PropertyHint.Range, "0.1,1,0.05")] public float EngageRangeFactor { get; set; } = 0.85f;
 
+    /// <summary>
+    /// Seconds between enemy scans for AI targeting. Lower reacts faster but
+    /// costs more with many units. Each unit starts at a random phase so scans spread out.
+    /// </summary>
+    [Export(PropertyHint.Range, "0,2,0.05")] public float TargetScanInterval { get; set; } = 0.25f;
+
     /// <summary>Drop queued orders when a pilot hands the unit back.</summary>
     [Export] public bool ClearOrdersOnRelease { get; set; }
 
@@ -58,7 +64,13 @@ public partial class Unit : CharacterBody3D, ICombatant
     public Vector3 AimDirection => Math3D.DirectionFor(Rotation.Y, AimPitch);
 
     private readonly Dictionary<GeometryInstance3D, GeometryInstance3D.ShadowCastingSetting> _hiddenGeometry = new();
+    private Unit? _cachedEnemy;
+    private double _scanTimer = GD.Randf() * 0.25;
     private readonly float _gravity = (float)ProjectSettings.GetSetting("physics/3d/default_gravity", 9.8f);
+
+    public override void _EnterTree() => UnitRegistry.Register(this);
+
+    public override void _ExitTree() => UnitRegistry.Unregister(this);
 
     public override void _Ready()
     {
@@ -71,7 +83,28 @@ public partial class Unit : CharacterBody3D, ICombatant
     public override void _PhysicsProcess(double delta)
     {
         if (!IsAlive) return;
+        _scanTimer -= delta;
         ApplyIntent(Controller.ComputeIntent(this, delta), delta);
+    }
+
+    /// <summary>
+    /// Nearest hostile within <see cref="EngageRange"/>, rescanned every
+    /// <see cref="TargetScanInterval"/> seconds. A cached target is re-checked
+    /// each call, so a dead or out-of-range target triggers an immediate rescan.
+    /// </summary>
+    public Unit? NearestEnemyInRange()
+    {
+        var range = EngageRange;
+        var cachedValid = _cachedEnemy is not null && IsInstanceValid(_cachedEnemy) && _cachedEnemy.IsAlive
+            && GlobalPosition.DistanceSquaredTo(_cachedEnemy.GlobalPosition) <= range * range;
+
+        if (_scanTimer <= 0 || (_cachedEnemy is not null && !cachedValid))
+        {
+            _scanTimer = TargetScanInterval;
+            _cachedEnemy = UnitRegistry.FindNearestEnemy(this, range);
+            return _cachedEnemy;
+        }
+        return cachedValid ? _cachedEnemy : null;
     }
 
     /// <summary>Give an order. While piloted it is queued and starts once the pilot leaves.</summary>
@@ -143,6 +176,7 @@ public partial class Unit : CharacterBody3D, ICombatant
     {
         Commands.Clear();
         RemoveFromGroup(UnitRegistry.Group);
+        UnitRegistry.Unregister(this);
         CollisionLayer = 0;
         CollisionMask = 0;
         OnDeath();
