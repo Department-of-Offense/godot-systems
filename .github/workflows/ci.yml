@@ -51,6 +51,9 @@ jobs:
       - name: Build C#
         run: dotnet build --nologo -warnaserror
 
+      - name: Each module builds on its own
+        run: bash tools/check-standalone.sh
+
       - name: Import project
         run: godot --headless --path . --import
 
