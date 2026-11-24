@@ -23,16 +23,39 @@ public abstract class UnitCommand
     /// <summary>World point this order is heading for, for UI markers. Null if none.</summary>
     public virtual Vector3? Destination => null;
 
-    /// <summary>Walk toward <paramref name="target"/>. Returns true once within <paramref name="stopRadius"/>.</summary>
-    protected static bool SteerTowards(Unit unit, Vector3 target, float stopRadius, ref UnitIntent intent)
+    /// <summary>
+    /// Walk toward <paramref name="target"/>, along a navmesh path when the
+    /// world has one. Returns true once within <paramref name="stopRadius"/>
+    /// of where the unit can actually get to (the target, or the nearest
+    /// reachable point if the target is inside an obstacle).
+    /// </summary>
+    /// <param name="settleWhenCrowded">
+    /// Also count as arrived when the unit has made no progress for
+    /// <see cref="Unit.CrowdedSettleSeconds"/> while within
+    /// <see cref="Unit.CrowdedArrivalRadius"/>: usually other units are
+    /// standing on or around the spot. Use for destinations, not for chasing.
+    /// </param>
+    protected static bool SteerTowards(Unit unit, Vector3 target, float stopRadius, ref UnitIntent intent, bool settleWhenCrowded = false)
     {
-        var to = Math3D.Flat(target - unit.GlobalPosition);
-        var distance = to.Length();
-        if (distance <= stopRadius) return true;
+        var position = unit.GlobalPosition;
+        var steerPoint = target;
+        var goal = target;
+        if (unit.UseNavigation)
+        {
+            steerPoint = unit.Path.NextPoint(unit, target);
+            goal = unit.Path.Goal;
+        }
 
-        var direction = to / distance;
+        var toGoal = Math3D.Flat(goal - position);
+        var remaining = toGoal.Length();
+        if (remaining <= stopRadius) return true;
+        if (settleWhenCrowded && unit.UseNavigation && remaining <= unit.CrowdedArrivalRadius
+            && unit.Path.StuckSeconds >= unit.CrowdedSettleSeconds) return true;
+
+        var toSteer = Math3D.Flat(steerPoint - position);
+        var direction = toSteer.LengthSquared() > 0.0001f ? toSteer.Normalized() : toGoal / remaining;
         // Ease off over the last couple of metres so units don't overshoot and jitter.
-        intent.Move = direction * Mathf.Clamp(distance / 1.5f, 0.35f, 1f);
+        intent.Move = direction * Mathf.Clamp(remaining / 1.5f, 0.35f, 1f);
         intent.FaceYaw = Math3D.YawFor(direction);
         return false;
     }
@@ -54,7 +77,7 @@ public sealed class MoveCommand(Vector3 target) : UnitCommand
     public override Vector3? Destination => Target;
 
     public override bool Execute(Unit unit, double delta, ref UnitIntent intent) =>
-        SteerTowards(unit, Target, unit.ArrivalRadius, ref intent);
+        SteerTowards(unit, Target, unit.ArrivalRadius, ref intent, settleWhenCrowded: true);
 }
 
 /// <summary>Chase a specific target and shoot it until it dies.</summary>
@@ -93,7 +116,7 @@ public sealed class AttackMoveCommand(Vector3 target) : UnitCommand
             Engage(unit, enemy, ref intent);
             return false;
         }
-        return SteerTowards(unit, Target, unit.ArrivalRadius, ref intent);
+        return SteerTowards(unit, Target, unit.ArrivalRadius, ref intent, settleWhenCrowded: true);
     }
 }
 
