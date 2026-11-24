@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: 4.7.2
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Cache Godot
+        id: godot-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-mono-linux
+
+      - name: Download Godot (.NET)
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot && cd ~/godot
+          curl -fsSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_mono_linux_x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+
+      - name: Put Godot on PATH
+        run: |
+          bin="$(find ~/godot -type f -name 'Godot_v*_mono_linux.x86_64' | head -n1)"
+          chmod +x "$bin"
+          mkdir -p ~/.local/bin && ln -sf "$bin" ~/.local/bin/godot
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Build C#
+        run: dotnet build --nologo -warnaserror
+
+      - name: Import project
+        run: godot --headless --path . --import
+
+      - name: Run tests
+        run: |
+          set -o pipefail
+          godot --headless --fixed-fps 60 --path . res://tests/TestRunner.tscn 2>&1 | tee test.log
+          if grep -qE '^(SCRIPT )?ERROR' test.log; then echo "::error::Engine errors were logged during tests"; exit 1; fi
+
+      - name: Demo smoke run
+        run: |
+          godot --headless --fixed-fps 60 --path . --quit-after 600 2>&1 | tee demo.log
+          if grep -qE '^(SCRIPT )?ERROR' demo.log; then echo "::error::Engine errors were logged in the demo"; exit 1; fi

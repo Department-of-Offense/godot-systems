@@ -1,0 +1,25 @@
+# Godot
+.godot/
+.import/
+export_credentials.cfg
+*.translation
+
+# .NET / C#
+.mono/
+bin/
+obj/
+*.user
+*.suo
+mono_crash.*.json
+
+# Builds
+/build/
+/export/
+
+# IDEs / OS
+.vs/
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
