@@ -227,8 +227,12 @@ public partial class DebugOverlay : CanvasLayer
     private void Fail(IDebugSection section, Exception e)
     {
         _failed.Add(section);
-        GD.PushError($"Debug section '{section.Title}' failed and was switched off: {e}");
+        SectionFailed(section, e);
     }
+
+    /// <summary>Called once when a section throws and is switched off. Logs an engine error by default.</summary>
+    public Action<IDebugSection, Exception> SectionFailed { get; set; } = (section, e) =>
+        GD.PushError($"Debug section '{section.Title}' failed and was switched off: {e}");
 
     private void RenderLines()
     {

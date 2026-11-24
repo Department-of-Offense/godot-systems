@@ -126,7 +126,10 @@ public class DebugTests
     [Test]
     public async Task AFailingSectionIsSwitchedOff(TestContext ctx)
     {
-        var overlay = new DebugOverlay { StartOpen = true };
+        IDebugSection? reported = null;
+        var reports = 0;
+        // Captured instead of logged: CI fails on any engine error in the log.
+        var overlay = new DebugOverlay { StartOpen = true, SectionFailed = (section, _) => { reported = section; reports++; } };
         var counter = new CountingSection();
         overlay.AddSection(new BrokenSection());
         overlay.AddSection(counter);
@@ -135,6 +138,7 @@ public class DebugTests
         overlay.RefreshPanel();
         Check.True(!overlay.PanelText.Contains("Broken"), "the throwing section is dropped from the panel");
         Check.True(counter.Draws >= 2 && overlay.PanelText.Contains("Counter"), "other sections keep running");
+        Check.True(reported is BrokenSection && reports == 1, $"the failure is reported once ({reports})");
     }
 
     [Test]
