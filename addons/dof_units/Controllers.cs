@@ -53,6 +53,20 @@ public class PilotController : IUnitController
     public string MoveRightAction { get; set; } = CoreActions.MoveRight;
     public string JumpAction { get; set; } = UnitActions.Jump;
     public string FireAction { get; set; } = UnitActions.Fire;
+    public string AimAction { get; set; } = UnitActions.Aim;
+    public string ReloadAction { get; set; } = UnitActions.Reload;
+
+    /// <summary>Mouse sensitivity is divided by the weapon's zoom while aiming, so aim feels the same zoomed in.</summary>
+    public bool ScaleSensitivityWhenAiming { get; set; } = true;
+
+    /// <summary>How fast the view drifts back down after recoil (per second; higher = snappier).</summary>
+    public float RecoilRecovery { get; set; } = 5f;
+
+    /// <summary>Recoil multiplier while aiming down sights.</summary>
+    public float AimingRecoilMultiplier { get; set; } = 0.7f;
+
+    /// <summary>True while the aim button is held (updated each tick).</summary>
+    public bool IsAiming { get; private set; }
 
     public float LookYaw { get; set; }
     public float LookPitch { get; set; }
@@ -68,10 +82,32 @@ public class PilotController : IUnitController
 
     public PilotController() => UnitActions.EnsureDefaults();
 
+    private Unit? _unit;
+    private float _recoilDebt;
+
     public virtual void OnAttached(Unit unit)
     {
         LookYaw = unit.Rotation.Y;
         LookPitch = unit.AimPitch;
+        _unit = unit;
+        _recoilDebt = 0f;
+        if (unit.Weapon is not null) unit.Weapon.Recoiled += OnRecoil;
+    }
+
+    public virtual void OnDetached(Unit unit)
+    {
+        if (unit.Weapon is not null) unit.Weapon.Recoiled -= OnRecoil;
+        _unit = null;
+        IsAiming = false;
+    }
+
+    /// <summary>Kick the view. Pitch recoil is recovered over time; sideways kick stays (the player corrects it).</summary>
+    protected virtual void OnRecoil(Vector2 kick)
+    {
+        var scale = IsAiming ? AimingRecoilMultiplier : 1f;
+        LookPitch = Mathf.Clamp(LookPitch + kick.X * scale, MinPitch, MaxPitch);
+        LookYaw += kick.Y * scale;
+        _recoilDebt += kick.X * scale;
     }
 
     /// <summary>Feed mouse motion here (only while the mouse is captured).</summary>
@@ -79,8 +115,10 @@ public class PilotController : IUnitController
     {
         if (@event is InputEventMouseMotion motion && Input.MouseMode == Input.MouseModeEnum.Captured)
         {
-            LookYaw -= motion.Relative.X * MouseSensitivity;
-            LookPitch = Mathf.Clamp(LookPitch - motion.Relative.Y * MouseSensitivity, MinPitch, MaxPitch);
+            var sensitivity = MouseSensitivity;
+            if (IsAiming && ScaleSensitivityWhenAiming && _unit?.Weapon is { } weapon) sensitivity /= Mathf.Max(1f, weapon.AdsZoom);
+            LookYaw -= motion.Relative.X * sensitivity;
+            LookPitch = Mathf.Clamp(LookPitch - motion.Relative.Y * sensitivity, MinPitch, MaxPitch);
         }
     }
 
@@ -89,16 +127,26 @@ public class PilotController : IUnitController
         var input = Input.GetVector(MoveLeftAction, MoveRightAction, MoveForwardAction, MoveBackAction);
         var move = new Basis(Vector3.Up, LookYaw) * new Vector3(input.X, 0f, input.Y);
         var fire = Input.IsActionPressed(FireAction);
+        IsAiming = Input.IsActionPressed(AimAction) && unit.Weapon is not null;
+
+        if (_recoilDebt > 0f)
+        {
+            var recover = _recoilDebt * (1f - Mathf.Exp(-RecoilRecovery * (float)delta));
+            _recoilDebt -= recover;
+            LookPitch = Mathf.Clamp(LookPitch - recover, MinPitch, MaxPitch);
+        }
 
         var intent = new UnitIntent
         {
             Move = move.LimitLength(1f),
             Jump = Input.IsActionJustPressed(JumpAction),
             Fire = fire,
+            AimDownSights = IsAiming,
+            Reload = Input.IsActionJustPressed(ReloadAction),
             AimAt = ResolveAimPoint(unit),
         };
 
-        if (BodyFollowsLook || fire)
+        if (BodyFollowsLook || fire || IsAiming)
         {
             intent.FaceYaw = LookYaw;
             intent.SnapFacing = true;
@@ -133,11 +181,15 @@ public static class UnitActions
 {
     public const string Jump = "dof_jump";
     public const string Fire = "dof_fire";
+    public const string Aim = "dof_aim";
+    public const string Reload = "dof_reload";
 
     public static void EnsureDefaults()
     {
         CoreActions.EnsureDefaults();
         InputDefaults.Keys(Jump, Key.Space);
         InputDefaults.Mouse(Fire, MouseButton.Left);
+        InputDefaults.Mouse(Aim, MouseButton.Right);
+        InputDefaults.Keys(Reload, Key.R);
     }
 }

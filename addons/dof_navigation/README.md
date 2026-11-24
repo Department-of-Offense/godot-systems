@@ -11,7 +11,7 @@ Pathfinding and local avoidance on Godot's built-in navigation server, for any N
 
 Set the agent size (`AgentRadius`, `AgentHeight`, `AgentMaxClimb`) to match your movers, with `AgentRadius` a little larger than their collider.
 
-`CellSize` (default 0.25 m) trades bake time for accuracy. A 160 m map bakes in roughly 0.3–0.5 s at the default. Don't go much coarser than the agent radius: Recast simplifies outlines by up to ~1.3 cells, and at 0.5 m cells paths cut corners tightly enough that a 0.4 m capsule snags on them.
+`CellSize` (default 0.25 m) trades bake time for accuracy. A 160 m map bakes in roughly 0.3â€“0.5 s at the default. Don't go much coarser than the agent radius: Recast simplifies outlines by up to ~1.3 cells, and at 0.5 m cells paths cut corners tightly enough that a 0.4 m capsule snags on them.
 
 ## Following paths
 

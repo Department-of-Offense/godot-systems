@@ -1,13 +1,13 @@
 [gd_resource type="Resource" script_class="UnitDefinition" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://addons/dof_units/UnitDefinition.cs" id="1_script"]
-[ext_resource type="Resource" path="res://demo/units/weapons/smg.tres" id="2_weapon"]
+[ext_resource type="Resource" path="res://demo/units/weapons/shotgun.tres" id="2_weapon"]
 
 [resource]
 script = ExtResource("1_script")
 Id = "scout"
 DisplayName = "Scout"
-Description = "Fast and fragile, shreds at close range."
+Description = "Fast and fragile, deadly up close with a scattergun."
 Tags = PackedStringArray("infantry", "fast")
 MaxHealth = 60.0
 MoveSpeed = 8.5

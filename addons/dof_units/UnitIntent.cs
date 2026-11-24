@@ -27,4 +27,10 @@ public struct UnitIntent
 
     public bool Fire;
     public bool Jump;
+
+    /// <summary>Aim down sights: tighter spread (and, for a player, camera zoom).</summary>
+    public bool AimDownSights;
+
+    /// <summary>Start reloading the weapon this tick.</summary>
+    public bool Reload;
 }
