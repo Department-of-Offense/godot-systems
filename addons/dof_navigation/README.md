@@ -1,6 +1,6 @@
 # Navigation (`dof_navigation`)
 
-Pathfinding on Godot's built-in navigation server: runtime navmesh baking from static collision, plus a throttled path follower for any Node3D, with straight-line fallback.
+Pathfinding and local avoidance on Godot's built-in navigation server, for any Node3D: runtime navmesh baking from static collision, a throttled path follower with straight-line fallback, and RVO crowd avoidance.
 
 **Depends on:** dof_core
 
@@ -27,8 +27,26 @@ var arrived = agent.GlobalPosition.DistanceTo(path.Goal) < 0.5f;
 - With no navmesh in the world, `NextPoint` returns the target itself (straight-line movement).
 - `Corners` and `CornerIndex` expose the current path, e.g. for debug drawing.
 
-`dof_units` uses this for every order that moves a unit (`Unit.Path`, `Unit.UseNavigation`).
+- `StuckSeconds` is how long since the agent last got meaningfully closer to `Goal`: use it to settle for "close enough" or give up.
+
+## Avoiding each other
+
+Paths tell agents where to go. Without avoidance, a crowd that follows the same path funnels through the same corners into a clump. `AvoidanceAgent` adds RVO steering:
+
+```csharp
+var avoid = new AvoidanceAgent { Radius = 0.5f, MaxSpeed = 6f };
+avoid.Attach(GetWorld3D());                    // on enter tree; Detach() on exit/death
+// each physics tick, after deciding the velocity you want:
+velocity = avoid.Steer(GlobalPosition, desiredVelocity);
+```
+
+- An agent ignores agents with lower `Priority`. Give movers a higher priority than standing agents, and a player-controlled agent the highest.
+- Standing agents (desired velocity zero) step aside for higher-priority movers once the solver asks for at least `YieldSpeed`. Without this, a line of standing agents can wall movers off.
+- `Steer(..., obey: false)` returns your velocity unchanged but keeps the agent visible to others: use it for player control.
+- The safe velocity lags one physics tick.
+
+`dof_units` uses all of this by default (`Unit.Path`, `Unit.Avoidance`, `UseNavigation`, `UseAvoidance`).
 
 ## Not yet
 
-Local avoidance between moving agents (units still push each other physically), off-mesh links (jumps, ladders), and flow fields for very large groups.
+Off-mesh links (jumps, ladders), avoidance against static obstacles (agents rely on the navmesh and physics for walls), and flow fields for very large groups.
