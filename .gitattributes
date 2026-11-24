@@ -1,0 +1,12 @@
+# Normalize line endings so Windows and Linux devs don't fight over diffs.
+* text=auto eol=lf
+*.cs text diff=csharp
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# The engine repo is code-only. Binary assets belong in game repos (via Git LFS).
+*.png binary
+*.jpg binary
+*.wav binary
+*.ogg binary
+*.glb binary
