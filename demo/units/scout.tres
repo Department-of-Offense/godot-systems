@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="UnitDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://addons/dof_units/UnitDefinition.cs" id="1_script"]
+[ext_resource type="Resource" path="res://demo/units/weapons/smg.tres" id="2_weapon"]
+
+[resource]
+script = ExtResource("1_script")
+Id = "scout"
+DisplayName = "Scout"
+Description = "Fast and fragile, shreds at close range."
+Tags = PackedStringArray("infantry", "fast")
+MaxHealth = 60.0
+MoveSpeed = 8.5
+Radius = 0.35
+Height = 1.7
+EyeHeight = 1.5
+Weapon = ExtResource("2_weapon")

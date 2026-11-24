@@ -7,9 +7,9 @@ Modular, reusable **Godot 4 (C#) gameplay systems** for Department of Offense ga
 | Core | `dof_core` | Math helpers, input-binding defaults | none |
 | Testing | `dof_testing` | Headless test runner with simulated time | none |
 | Cameras | `dof_cameras` | Camera director: RTS view plus first-person, chase and orbit follow views, blending, spring-arm collision | core |
-| Combat | `dof_combat` | Health, hitscan weapons, teams, damage for any `ICombatant` | core |
+| Combat | `dof_combat` | Health, hitscan weapons, weapon types as data, teams, damage for any `ICombatant` | core |
 | Navigation | `dof_navigation` | Runtime navmesh baking, path following and crowd avoidance for any Node3D | core |
-| Units | `dof_units` | Controllable units, AI and pilot controllers, order queue (move / attack / attack-move), pathfinding and avoidance | core, combat, navigation |
+| Units | `dof_units` | Controllable units, AI and pilot controllers, order queue (move / attack / attack-move), pathfinding and avoidance, unit types as data (`UnitDefinition`, `UnitCatalog`) | core, combat, navigation |
 | Command | `dof_command` | RTS selection (click / box), right-click orders, formations | core, combat, units |
 | Hybrid | `dof_hybrid` | The strategy ↔ pilot loop: command from above, press F to possess a unit | core, cameras, command, units |
 | UI | `dof_ui` | Placeholder HUD for the hybrid loop | hybrid, units |

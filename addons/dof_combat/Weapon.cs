@@ -12,6 +12,9 @@ public partial class Weapon : Node3D
 {
     [Signal] public delegate void FiredEventHandler(Vector3 from, Vector3 to, Node? hit);
 
+    /// <summary>When set, its values replace the ones below when the weapon becomes ready.</summary>
+    [Export] public WeaponDefinition? Definition { get; set; }
+
     [Export] public float Damage { get; set; } = 10f;
     [Export] public float FireInterval { get; set; } = 0.2f;
     [Export] public float Range { get; set; } = 40f;
@@ -23,6 +26,8 @@ public partial class Weapon : Node3D
     private double _cooldown;
 
     public bool IsReady => _cooldown <= 0;
+
+    public override void _Ready() => Definition?.ApplyTo(this);
 
     public override void _PhysicsProcess(double delta)
     {

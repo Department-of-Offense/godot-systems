@@ -14,50 +14,27 @@ public static class Prototype
     public const uint WorldLayer = 1;
     public const uint UnitLayer = 2;
 
-    public static Unit CreateTrooper(string name, int team, Color color)
+    /// <summary>The greybox rifle trooper used by the demo, labs and tests.</summary>
+    public static readonly UnitDefinition Trooper = new()
     {
-        var unit = new Unit
-        {
-            Name = name,
-            DisplayName = name,
-            Team = team,
-            CollisionLayer = UnitLayer,
-            CollisionMask = WorldLayer | UnitLayer,
-        };
+        Id = "proto_trooper",
+        DisplayName = "Trooper",
+        Description = "Greybox rifle infantry.",
+        Tags = ["infantry"],
+        MaxHealth = 100f,
+        MoveSpeed = 6f,
+        Weapon = new WeaponDefinition { DisplayName = "Rifle", Damage = 8f, FireInterval = 0.25f, Range = 35f },
+    };
 
-        unit.AddChild(new CollisionShape3D
-        {
-            Name = "Collision",
-            Shape = new CapsuleShape3D { Radius = 0.4f, Height = 1.8f },
-            Position = new Vector3(0, 0.9f, 0),
-        });
+    /// <summary>A <see cref="Trooper"/> on the prototype collision layers.</summary>
+    public static Unit CreateTrooper(string name, int team, Color color) => CreateUnit(Trooper, name, team, color);
 
-        var body = Material(color);
-        unit.AddChild(new MeshInstance3D
-        {
-            Name = "Body",
-            Mesh = new CapsuleMesh { Radius = 0.4f, Height = 1.8f },
-            Position = new Vector3(0, 0.9f, 0),
-            MaterialOverride = body,
-        });
-        // Visor and gun barrel make the facing direction (-Z) obvious.
-        unit.AddChild(new MeshInstance3D
-        {
-            Name = "Visor",
-            Mesh = new BoxMesh { Size = new Vector3(0.5f, 0.15f, 0.2f) },
-            Position = new Vector3(0, 1.55f, -0.32f),
-            MaterialOverride = Material(new Color(0.1f, 0.1f, 0.12f)),
-        });
-        unit.AddChild(new MeshInstance3D
-        {
-            Name = "Gun",
-            Mesh = new BoxMesh { Size = new Vector3(0.1f, 0.1f, 0.7f) },
-            Position = new Vector3(0.32f, 1.2f, -0.45f),
-            MaterialOverride = Material(new Color(0.2f, 0.2f, 0.22f)),
-        });
-
-        unit.AddChild(new Health { Name = "Health", MaxHealth = 100f });
-        unit.AddChild(new Weapon { Name = "Weapon", Damage = 8f, FireInterval = 0.25f, Range = 35f });
+    /// <summary>Spawn any definition on the prototype collision layers (units collide with the world and each other).</summary>
+    public static Unit CreateUnit(UnitDefinition definition, string name, int team, Color color)
+    {
+        var unit = definition.Spawn(team, color, name);
+        unit.CollisionLayer = UnitLayer;
+        unit.CollisionMask = WorldLayer | UnitLayer;
         return unit;
     }
 

@@ -13,14 +13,23 @@ namespace Dof.Units;
 /// through <see cref="Commands"/>). <see cref="BeginPilot"/> hands control to
 /// any other <see cref="IUnitController"/>; the order queue waits meanwhile.
 ///
-/// Author units as scenes: a Unit root with a CollisionShape3D, meshes, and
-/// optional <see cref="Health"/> and <see cref="Weapon"/> children.
+/// Make units from a <see cref="UnitDefinition"/> (<c>definition.Spawn(team)</c>),
+/// or author them as scenes: a Unit root with a CollisionShape3D, meshes, and
+/// optional <see cref="Health"/> and <see cref="Weapon"/> children. A scene
+/// unit can also point at a definition to take its stats and missing parts.
 /// </summary>
 [GlobalClass]
 public partial class Unit : CharacterBody3D, ICombatant
 {
     [Signal] public delegate void DiedEventHandler(Unit unit);
     [Signal] public delegate void PilotChangedEventHandler(bool piloted);
+
+    /// <summary>
+    /// The unit type this unit was made from. Its stats override the values
+    /// below, and it adds a collider, model, Health and Weapon if missing.
+    /// Applied once, when the unit is spawned or becomes ready.
+    /// </summary>
+    [Export] public UnitDefinition? Definition { get; set; }
 
     [Export] public string DisplayName { get; set; } = "Unit";
     [Export] public int Team { get; set; }
@@ -113,8 +122,23 @@ public partial class Unit : CharacterBody3D, ICombatant
         Avoidance.Detach();
     }
 
+    /// <summary>
+    /// Apply <see cref="Definition"/> now (once). Spawn does this for you;
+    /// call it yourself if you need a scene unit's parts before it is ready.
+    /// </summary>
+    public void ApplyDefinition()
+    {
+        if (_definitionApplied || Definition is null) return;
+        _definitionApplied = true;
+        Definition.Configure(this);
+        Avoidance.ApplySettings();
+    }
+
+    private bool _definitionApplied;
+
     public override void _Ready()
     {
+        ApplyDefinition();
         AddToGroup(UnitRegistry.Group);
         Health = FindDirectChild<Health>() ?? AddNew(new Health { Name = "Health" });
         Health.Died += _ => HandleDeath();
