@@ -1,4 +1,5 @@
 using Dof.Combat;
+using Dof.Navigation;
 using Dof.Units;
 using Godot;
 
@@ -60,8 +61,12 @@ public static class Prototype
         return unit;
     }
 
-    /// <summary>Flat ground, sun, sky and a scatter of cover blocks.</summary>
-    public static void BuildBattlefield(Node3D root, float size = 160f, int coverCount = 24, int seed = 7)
+    /// <summary>
+    /// Flat ground, sun, sky and a scatter of cover blocks. With
+    /// <paramref name="navigation"/> it also adds a <see cref="NavmeshBaker"/>
+    /// that bakes a navmesh from them, so units path around cover.
+    /// </summary>
+    public static NavmeshBaker? BuildBattlefield(Node3D root, float size = 160f, int coverCount = 24, int seed = 7, bool navigation = true)
     {
         var sky = new Sky { SkyMaterial = new ProceduralSkyMaterial() };
         root.AddChild(new WorldEnvironment
@@ -109,6 +114,11 @@ public static class Prototype
             block.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = extent }, MaterialOverride = coverMaterial });
             root.AddChild(block);
         }
+
+        if (!navigation) return null;
+        var baker = new NavmeshBaker { Name = "Navmesh", SourceRoot = root, BakeAsync = size > 200f };
+        root.AddChild(baker);
+        return baker;
     }
 
     public static StandardMaterial3D Material(Color color) => new() { AlbedoColor = color, Roughness = 0.8f };
