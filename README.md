@@ -13,6 +13,8 @@ Modular, reusable **Godot 4 (C#) gameplay systems** for Department of Offense ga
 | Command | `dof_command` | RTS selection (click / box), right-click orders, formations | core, combat, units |
 | Hybrid | `dof_hybrid` | The strategy ↔ pilot loop: command from above, press F to possess a unit | core, cameras, command, units |
 | UI | `dof_ui` | Placeholder HUD for the hybrid loop: crosshair with spread, hit markers, ammo | combat, hybrid, units |
+| Debug | `dof_debug` | F3 overlay: performance panel, your own sections and toggles, `DebugDraw` lines and text from any system | core |
+| Unit debug | `dof_unitdebug` | Overlay view of units: paths, orders, targets, ranges, avoidance, labels, per-team counts | debug, units |
 | Prototyping | `dof_prototyping` | Greybox unit and battlefield builders (battlefields bake a navmesh) | combat, navigation, units |
 
 Each folder has a `README.md` covering usage and extension points, and a `module.cfg` declaring its dependencies.
