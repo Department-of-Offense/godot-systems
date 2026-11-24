@@ -1,13 +1,15 @@
-using CommandEngine.Core;
-using CommandEngine.Prototyping;
-using CommandEngine.Units;
+using Dof.Hybrid;
+using Dof.Prototyping;
+using Dof.UI;
+using Dof.Units;
 using Godot;
 
-namespace CommandEngine.Demo;
+namespace Dof.Demo;
 
 /// <summary>
-/// Playable sandbox: a blue squad (yours) and a red squad on a greybox field.
-/// Select blue units and order them around, or press F to pilot one.
+/// Playable sandbox using every system: a blue squad (yours) and a red squad
+/// on a greybox field. Select blue units and order them around, or press F
+/// to pilot one.
 /// </summary>
 public partial class DemoBattle : Node3D
 {
@@ -26,6 +28,10 @@ public partial class DemoBattle : Node3D
 
         var modes = new GameModeManager { Name = "GameModes", PlayerTeam = 0 };
         AddChild(modes);
+
+        var hud = new CanvasLayer { Name = "Hud" };
+        hud.AddChild(new CommandHud());
+        AddChild(hud);
 
         // Dev shortcut: `godot --path . -- --pilot-view=0|1|2` starts already piloting Blue-1.
         foreach (var arg in OS.GetCmdlineUserArgs())

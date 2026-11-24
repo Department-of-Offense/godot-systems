@@ -6,14 +6,14 @@ config_version=5
 
 [application]
 
-config/name="Command Engine"
-config/description="Reusable hybrid strategy / shooter framework: command units from above, or possess any unit and fight in first-person, chase or orbit view."
+config/name="Godot Systems"
+config/description="Modular Godot 4 C# systems: cameras, combat, units, RTS command, hybrid strategy/pilot loop, UI, prototyping and testing."
 run/main_scene="res://demo/Demo.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 
 [dotnet]
 
-project/assembly_name="CommandEngine"
+project/assembly_name="DofSystems"
 
 [physics]
 

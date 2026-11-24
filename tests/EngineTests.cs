@@ -1,14 +1,15 @@
 using System.Linq;
 using System.Threading.Tasks;
-using CommandEngine.Cameras;
-using CommandEngine.Core;
-using CommandEngine.Prototyping;
-using CommandEngine.Strategy;
-using CommandEngine.Testing;
-using CommandEngine.Units;
+using Dof.Cameras;
+using Dof.Hybrid;
+using Dof.Prototyping;
+using Dof.Command;
+using Dof.Testing;
+using Dof.Core;
+using Dof.Units;
 using Godot;
 
-namespace CommandEngine.Tests;
+namespace Dof.Tests;
 
 public class UnitCommandTests
 {
@@ -30,7 +31,7 @@ public class UnitCommandTests
         unit.Issue(new MoveCommand(target));
 
         await ctx.Until(() => unit.Commands.Count == 0, 600, "move command to complete");
-        var distance = UnitMath.Flat(unit.GlobalPosition - target).Length();
+        var distance = Math3D.Flat(unit.GlobalPosition - target).Length();
         Check.True(distance <= unit.ArrivalRadius + 0.05f, $"unit stopped {distance:0.00} m from target");
     }
 
@@ -69,7 +70,7 @@ public class UnitCommandTests
         Ground(ctx);
         var attacker = Spawn(ctx, "Attacker", 0, new Vector3(0, 0.1f, 0));
         var victim = Spawn(ctx, "Victim", 1, new Vector3(0, 0.1f, -36));
-        victim.Ai.AutoEngageWhenIdle = false; // a fair fight is a different test
+        victim.AutoEngageWhenIdle = false; // a fair fight is a different test
 
         attacker.Issue(new AttackCommand(victim));
         await ctx.Until(() => !victim.IsAlive, 60 * 30, "victim to die");
@@ -93,7 +94,7 @@ public class UnitCommandTests
         Ground(ctx);
         var unit = Spawn(ctx, "Sweeper", 0, new Vector3(0, 0.1f, 0));
         var blocker = Spawn(ctx, "Blocker", 1, new Vector3(0, 0.1f, -20));
-        blocker.Ai.AutoEngageWhenIdle = false;
+        blocker.AutoEngageWhenIdle = false;
 
         unit.Issue(new AttackMoveCommand(new Vector3(0, 0, -60)));
         await ctx.Until(() => !blocker.IsAlive, 60 * 30, "blocker to die on the way");
@@ -173,7 +174,7 @@ public class ModeSwitchTests
         Check.True(modes.Director.Active is ChaseRig, "then chase");
         modes.CyclePilotView();
         Check.True(modes.Director.Active is OrbitRig, "then orbit");
-        Check.True(!modes.Pilot.BodyFollowsLook, "orbit lets the body face its movement");
+        Check.True(!modes.Pilot!.BodyFollowsLook, "orbit lets the body face its movement");
         modes.CyclePilotView();
         Check.True(modes.Director.Active is FirstPersonRig, "wraps back to first person");
     }
@@ -206,7 +207,7 @@ public class ModeSwitchTests
 
         modes.TryPilot(unit);
         await ctx.PhysicsFrames(3);
-        var chase = modes.Director!.Chase;
+        var chase = modes.Director!.FollowView<ChaseRig>()!;
         Check.True(chase.ArmFraction < 0.6f, $"arm pulled in by the wall, fraction {chase.ArmFraction:0.00}");
         var cameraZ = chase.Evaluate(0).Origin.Z;
         Check.True(cameraZ < 2.25f - chase.CollisionRadius + 0.05f, $"camera stays in front of the wall, z={cameraZ:0.00}");
