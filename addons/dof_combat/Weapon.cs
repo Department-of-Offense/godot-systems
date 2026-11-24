@@ -96,6 +96,7 @@ public partial class Weapon : Node3D
     private double _cooldown;
     private double _reloadLeft;
     private float _bloom;
+    private PhysicsRayQueryParameters3D? _ray;
 
     public override void _Ready()
     {
@@ -205,9 +206,7 @@ public partial class Weapon : Node3D
         }
 
         var end = origin + direction * Range;
-        var query = PhysicsRayQueryParameters3D.Create(origin, end, HitMask);
-        if (shooter is not null) query.Exclude = new Godot.Collections.Array<Rid> { shooter.GetRid() };
-        var hit = GetWorld3D().DirectSpaceState.IntersectRay(query);
+        var hit = GetWorld3D().DirectSpaceState.IntersectRay(Ray(origin, end, HitMask, shooter, ref _ray));
 
         Node? hitNode = null;
         if (hit.Count > 0)
@@ -259,8 +258,34 @@ public partial class Weapon : Node3D
         return true;
     }
 
-    /// <summary>Where shots, tracers and projectiles live: in the world, not on the shooter, so they don't swing with it.</summary>
-    protected Node WorldRoot() => GetTree().CurrentScene ?? GetTree().Root;
+    /// <summary>
+    /// Where tracers and projectiles live: the level the weapon is in (its
+    /// topmost 3D ancestor), not the shooter, so they don't swing with it and
+    /// are freed with the level.
+    /// </summary>
+    protected Node WorldRoot()
+    {
+        Node root = this;
+        while (root.GetParent() is Node3D parent) root = parent;
+        return root != this ? root : GetTree().CurrentScene ?? GetTree().Root;
+    }
+
+    /// <summary>A reusable ray query (avoids an allocation per shot). Shared with <see cref="Projectile"/>.</summary>
+    internal static PhysicsRayQueryParameters3D Ray(Vector3 from, Vector3 to, uint mask, CollisionObject3D? exclude, ref PhysicsRayQueryParameters3D? cache)
+    {
+        cache ??= new PhysicsRayQueryParameters3D();
+        cache.From = from;
+        cache.To = to;
+        cache.CollisionMask = mask;
+        var rid = exclude is not null && IsInstanceValid(exclude) ? exclude.GetRid() : default;
+        if (cache.Exclude.Count != (rid.IsValid ? 1 : 0) || (rid.IsValid && cache.Exclude[0] != rid))
+            cache.Exclude = rid.IsValid ? new Godot.Collections.Array<Rid> { rid } : new Godot.Collections.Array<Rid>();
+        return cache;
+    }
+
+    /// <summary>Free <paramref name="node"/> after <paramref name="seconds"/>, via an engine callable (no C# delegate kept alive on the timer).</summary>
+    internal static void FreeAfter(Node node, double seconds) =>
+        node.GetTree().CreateTimer(seconds).Connect(SceneTreeTimer.SignalName.Timeout, new Callable(node, Node.MethodName.QueueFree));
 
     protected void SpawnTracer(Vector3 from, Vector3 to)
     {
@@ -280,6 +305,6 @@ public partial class Weapon : Node3D
         WorldRoot().AddChild(tracer);
         var up = Mathf.Abs((to - from).Normalized().Y) > 0.99f ? Vector3.Right : Vector3.Up;
         tracer.LookAtFromPosition((from + to) * 0.5f, to, up);
-        GetTree().CreateTimer(0.05).Timeout += tracer.QueueFree;
+        FreeAfter(tracer, 0.05);
     }
 }

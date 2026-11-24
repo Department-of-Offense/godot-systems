@@ -34,6 +34,7 @@ public partial class Projectile : Node3D
 
     private float _travelled;
     private MeshInstance3D? _bolt;
+    private PhysicsRayQueryParameters3D? _ray;
 
     public override void _Ready()
     {
@@ -56,9 +57,7 @@ public partial class Projectile : Node3D
         var step = Velocity * dt;
         var to = from + step;
 
-        var query = PhysicsRayQueryParameters3D.Create(from, to, HitMask);
-        if (Shooter is not null && IsInstanceValid(Shooter)) query.Exclude = new Godot.Collections.Array<Rid> { Shooter.GetRid() };
-        var hit = GetWorld3D().DirectSpaceState.IntersectRay(query);
+        var hit = GetWorld3D().DirectSpaceState.IntersectRay(Weapon.Ray(from, to, HitMask, Shooter, ref _ray));
         if (hit.Count > 0)
         {
             Impact((Vector3)hit["position"], hit["collider"].AsGodotObject());
@@ -148,7 +147,7 @@ public partial class Projectile : Node3D
             Position = point,
         };
         GetParent().AddChild(flash);
-        GetTree().CreateTimer(SplashRadius > 0f ? 0.15 : 0.06).Timeout += flash.QueueFree;
+        Weapon.FreeAfter(flash, SplashRadius > 0f ? 0.15 : 0.06);
     }
 
     private static StandardMaterial3D Glow(Color color) => new()
