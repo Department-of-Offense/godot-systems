@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="UnitDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://addons/dof_units/UnitDefinition.cs" id="1_script"]
+[ext_resource type="Resource" path="res://demo/units/weapons/cannon.tres" id="2_weapon"]
+
+[resource]
+script = ExtResource("1_script")
+Id = "heavy"
+DisplayName = "Heavy"
+Description = "Slow armoured trooper with a hard-hitting cannon."
+Tags = PackedStringArray("infantry", "armored")
+MaxHealth = 220.0
+MoveSpeed = 4.0
+Radius = 0.55
+Height = 2.0
+EyeHeight = 1.8
+Weapon = ExtResource("2_weapon")
