@@ -17,7 +17,11 @@ public partial class CameraDirector : Node3D
 {
     [Signal] public delegate void RigChangedEventHandler(string rigName);
 
-    /// <summary>Camera to drive. Created automatically if left empty.</summary>
+    /// <summary>
+    /// Camera to drive. Created automatically if left empty. The director
+    /// moves it every rendered frame (rigs already follow their subjects'
+    /// interpolated positions), so its physics interpolation is turned off.
+    /// </summary>
     [Export] public Camera3D? Camera { get; set; }
     [Export] public double TransitionSeconds { get; set; } = 0.45;
 
@@ -47,6 +51,10 @@ public partial class CameraDirector : Node3D
             Camera = new Camera3D { Name = "Camera" };
             AddChild(Camera);
         }
+        // Moved in _Process, so it must not be physics-interpolated: that would
+        // smooth it a second time and makes Godot warn ("Interpolated Camera3D
+        // triggered from outside physics process").
+        Camera.PhysicsInterpolationMode = PhysicsInterpolationModeEnum.Off;
         Camera.Current = true;
         Camera.Fov = Active.Fov;
         Camera.GlobalTransform = Active.Evaluate(0);

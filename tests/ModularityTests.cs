@@ -118,6 +118,22 @@ public partial class StandaloneUseTests
         Check.Equal(4, director.FollowViews.Count, "games can add follow views");
     }
 
+    [Test]
+    public async Task DirectedCamerasAreNotPhysicsInterpolated(TestContext ctx)
+    {
+        // The director moves cameras every rendered frame; interpolating them too
+        // double-smooths and logs "Interpolated Camera3D triggered from outside
+        // physics process". Covers both the director's own camera and one a game supplies.
+        var own = ctx.Add(new CameraDirector());
+        var supplied = new Camera3D();
+        ctx.Add(supplied);
+        var withSupplied = ctx.Add(new CameraDirector { Camera = supplied });
+        await ctx.PhysicsFrames(1);
+        Check.True(own.Camera!.PhysicsInterpolationMode == Node.PhysicsInterpolationModeEnum.Off, "director's own camera");
+        Check.True(supplied.PhysicsInterpolationMode == Node.PhysicsInterpolationModeEnum.Off, "game-supplied camera");
+        Check.True(!own.Camera.IsPhysicsInterpolatedAndEnabled(), "not interpolated even with project-wide interpolation on");
+    }
+
     /// <summary>Something destructible that is not a unit.</summary>
     private partial class Crate : StaticBody3D, ICombatant
     {
