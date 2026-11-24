@@ -196,6 +196,14 @@ public partial class Unit : CharacterBody3D, ICombatant
         return cachedValid ? _cachedEnemy : null;
     }
 
+    /// <summary>
+    /// The enemy <see cref="NearestEnemyInRange"/> last found, while it lives.
+    /// Read-only: unlike that method it never rescans, so debug views and UI
+    /// can ask freely without changing what the unit does.
+    /// </summary>
+    public Unit? CurrentEnemy =>
+        _cachedEnemy is not null && IsInstanceValid(_cachedEnemy) && _cachedEnemy.IsAlive ? _cachedEnemy : null;
+
     /// <summary>Give an order. While piloted it is queued and starts once the pilot leaves.</summary>
     public void Issue(UnitCommand command, bool append = false) => Commands.Issue(command, append);
 
