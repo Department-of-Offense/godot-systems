@@ -5,7 +5,19 @@
 [resource]
 script = ExtResource("1_script")
 DisplayName = "Cannon"
-Damage = 30.0
-FireInterval = 1.0
-Range = 45.0
+Damage = 35.0
+FireInterval = 1.2
+Range = 50.0
 TracerColor = Color(1, 0.45, 0.2, 1)
+SpreadDegrees = 0.5
+MaxSpreadDegrees = 0.5
+RecoilPitchDegrees = 4.0
+RecoilYawDegrees = 1.0
+MagazineSize = 4
+ReloadTime = 2.5
+ProjectileSpeed = 40.0
+ProjectileGravity = 6.0
+SplashRadius = 3.0
+SplashEdgeDamage = 0.3
+AdsSpreadMultiplier = 0.6
+AdsZoom = 1.8

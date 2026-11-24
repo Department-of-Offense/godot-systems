@@ -23,7 +23,22 @@ public static class Prototype
         Tags = ["infantry"],
         MaxHealth = 100f,
         MoveSpeed = 6f,
-        Weapon = new WeaponDefinition { DisplayName = "Rifle", Damage = 8f, FireInterval = 0.25f, Range = 35f },
+        Weapon = new WeaponDefinition
+        {
+            DisplayName = "Rifle",
+            Damage = 8f,
+            FireInterval = 0.25f,
+            Range = 35f,
+            SpreadDegrees = 0.5f,
+            SpreadPerShot = 0.25f,
+            MaxSpreadDegrees = 3f,
+            RecoilPitchDegrees = 0.7f,
+            RecoilYawDegrees = 0.3f,
+            MagazineSize = 30,
+            ReloadTime = 1.8f,
+            AdsSpreadMultiplier = 0.4f,
+            AdsZoom = 1.5f,
+        },
     };
 
     /// <summary>A <see cref="Trooper"/> on the prototype collision layers.</summary>

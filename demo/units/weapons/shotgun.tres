@@ -4,8 +4,17 @@
 
 [resource]
 script = ExtResource("1_script")
-DisplayName = "SMG"
-Damage = 4.0
-FireInterval = 0.1
-Range = 22.0
+DisplayName = "Scattergun"
+Damage = 6.0
+FireInterval = 0.7
+Range = 18.0
 TracerColor = Color(0.6, 1, 0.9, 1)
+SpreadDegrees = 5.0
+MaxSpreadDegrees = 5.0
+Pellets = 6
+RecoilPitchDegrees = 5.0
+RecoilYawDegrees = 1.5
+MagazineSize = 6
+ReloadTime = 2.0
+AdsSpreadMultiplier = 0.7
+AdsZoom = 1.2

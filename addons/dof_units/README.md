@@ -24,3 +24,17 @@ AddChild(heavy);
 - **Your own fields.** Subclass with `[GlobalClass] public partial class MyUnitDefinition : UnitDefinition`, add `[Export]` fields (cost, build time, armour class...), and override `Configure(unit)` (call `base.Configure` first) or `CreateUnit()` to spawn your own `Unit` subclass.
 
 Example definitions live in the systems repo at `demo/units/`.
+
+## Shooting
+
+A unit fires its weapon when the intent says `Fire`, starts a reload on `Reload`, and tightens its spread on `AimDownSights`. `Unit.SpreadMultiplier` combines three factors for each shot:
+- the weapon's `AdsSpreadMultiplier` while aiming;
+- `MovingSpreadMultiplier` while walking (default 1.5);
+- `AiSpreadMultiplier` when not piloted. Use it for difficulty or veterancy: below 1 is a sharpshooter.
+
+The AI reloads automatically when the magazine runs dry.
+
+`PilotController` adds the player side:
+- **Aim:** right mouse (`dof_aim`). Mouse sensitivity is divided by the weapon's zoom while aiming (`ScaleSensitivityWhenAiming`).
+- **Reload:** R (`dof_reload`).
+- **Recoil:** the weapon's recoil kicks the view up. The upward kick drifts back down (`RecoilRecovery`). The sideways kick stays for the player to correct. Aiming reduces recoil (`AimingRecoilMultiplier`).

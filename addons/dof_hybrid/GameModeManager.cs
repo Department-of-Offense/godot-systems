@@ -66,6 +66,18 @@ public partial class GameModeManager : Node
         Callable.From(FocusOnPlayerForces).CallDeferred();
     }
 
+    /// <summary>Zoom the follow view while the pilot aims down sights. Override <see cref="AimZoom"/> to change it.</summary>
+    public override void _Process(double delta)
+    {
+        if (Director?.Active is FollowRig rig)
+            rig.Zoom = CurrentMode == Mode.Pilot && Pilot is { IsAiming: true } && PilotedUnit is { Weapon: { } weapon }
+                ? AimZoom(weapon.AdsZoom)
+                : 1f;
+    }
+
+    /// <summary>Camera zoom to use while aiming with a weapon whose <c>AdsZoom</c> is <paramref name="weaponZoom"/>.</summary>
+    protected virtual float AimZoom(float weaponZoom) => weaponZoom;
+
     public override void _UnhandledInput(InputEvent @event)
     {
         if (CurrentMode == Mode.Strategy)

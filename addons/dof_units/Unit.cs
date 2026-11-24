@@ -69,6 +69,15 @@ public partial class Unit : CharacterBody3D, ICombatant
     /// <summary>Steer around other units (RVO). See <see cref="Avoidance"/>.</summary>
     [Export] public bool UseAvoidance { get; set; } = true;
 
+    /// <summary>Spread multiplier while walking (shooting on the move is less accurate).</summary>
+    [Export(PropertyHint.Range, "1,4,0.05")] public float MovingSpreadMultiplier { get; set; } = 1.5f;
+
+    /// <summary>
+    /// Spread multiplier for this unit's AI (not for a pilot): below 1 is a
+    /// sharpshooter, above 1 a poor shot. Use it for difficulty or veterancy.
+    /// </summary>
+    [Export(PropertyHint.Range, "0,4,0.05")] public float AiSpreadMultiplier { get; set; } = 1f;
+
     /// <summary>Drop queued orders when a pilot hands the unit back.</summary>
     [Export] public bool ClearOrdersOnRelease { get; set; }
 
@@ -92,6 +101,21 @@ public partial class Unit : CharacterBody3D, ICombatant
     public IUnitController Controller => Pilot ?? AiController;
     public bool IsPiloted => Pilot is not null;
     public bool IsAlive => Health is not null && Health.IsAlive;
+
+    /// <summary>True while the driver is aiming down sights.</summary>
+    public bool IsAimingDownSights { get; private set; }
+
+    /// <summary>Spread multiplier the next shot would use (aiming, moving, AI skill).</summary>
+    public float SpreadMultiplier
+    {
+        get
+        {
+            var multiplier = IsPiloted ? 1f : AiSpreadMultiplier;
+            if (IsAimingDownSights && Weapon is not null) multiplier *= Weapon.AdsSpreadMultiplier;
+            if (Math3D.Flat(Velocity).LengthSquared() > 0.25f) multiplier *= MovingSpreadMultiplier;
+            return multiplier;
+        }
+    }
 
     /// <summary>Current aim pitch in radians, positive is up.</summary>
     public float AimPitch { get; private set; }
@@ -280,11 +304,14 @@ public partial class Unit : CharacterBody3D, ICombatant
 
         AimPitch = intent.AimPitch ?? Mathf.Lerp(AimPitch, 0f, Math3D.Damp(TurnSharpness, delta));
 
+        IsAimingDownSights = intent.AimDownSights;
+        if (intent.Reload) Weapon?.StartReload();
+
         if (intent.Fire && Weapon is not null)
         {
             var origin = EyePosition;
             var direction = intent.AimAt is { } target ? (target - origin).Normalized() : AimDirection;
-            Weapon.TryFire(this, Team, origin, direction);
+            Weapon.TryFire(this, Team, origin, direction, SpreadMultiplier);
         }
     }
 

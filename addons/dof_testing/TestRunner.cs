@@ -85,7 +85,9 @@ public partial class TestRunner : Node
             .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Instance)
                 .Where(m => m.GetCustomAttribute<TestAttribute>() is not null)
                 .Select(m => (Type: t, Method: m)))
-            .Where(x => filter is null || $"{x.Type.Name}.{x.Method.Name}".Contains(filter, StringComparison.OrdinalIgnoreCase))
+            // --filter=A,B runs tests whose "Class.Method" contains any of the comma-separated parts.
+            .Where(x => filter is null || filter.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Any(f => $"{x.Type.Name}.{x.Method.Name}".Contains(f.Trim(), StringComparison.OrdinalIgnoreCase)))
             .OrderBy(x => x.Type.Name).ThenBy(x => x.Method.Name)
             .ToList();
 
@@ -114,9 +116,21 @@ public partial class TestRunner : Node
 
             world.QueueFree();
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            // Collect each test's garbage at a quiet point, so C# finalizers
+            // don't run in the middle of the next test.
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
         }
 
         GD.Print($"{tests.Count - failures.Count} passed, {failures.Count} failed ({clock.Elapsed.TotalSeconds:0.0}s)");
+
+        // Shut down cleanly: let short-lived effects and timers expire, then
+        // collect C# wrappers, so the engine doesn't find live managed
+        // references at exit (which logs errors and can crash on shutdown).
+        for (var i = 0; i < 30; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         GetTree().Quit(failures.Count == 0 && tests.Count > 0 ? 0 : 1);
     }
 }

@@ -109,7 +109,25 @@ public sealed class StrategyCameraRig : ICameraRig
 public abstract class FollowRig : ICameraRig
 {
     public abstract string Name { get; }
-    public virtual float Fov => 75f;
+
+    /// <summary>Field of view with zoom applied. Override <see cref="BaseFov"/> to change the unzoomed value.</summary>
+    public float Fov => BaseFov / _zoom;
+
+    /// <summary>Field of view at zoom 1, in degrees.</summary>
+    protected virtual float BaseFov => 75f;
+
+    /// <summary>
+    /// Target zoom (1 = none, 2 = half the field of view), e.g. for aiming
+    /// down sights. The view eases toward it at <see cref="ZoomSharpness"/>.
+    /// </summary>
+    public float Zoom { get; set; } = 1f;
+
+    public float ZoomSharpness { get; set; } = 14f;
+
+    /// <summary>The eased zoom actually in use this frame.</summary>
+    public float CurrentZoom => _zoom;
+
+    private float _zoom = 1f;
 
     /// <summary>
     /// True if the camera looks around independently of the subject's facing
@@ -131,6 +149,8 @@ public abstract class FollowRig : ICameraRig
     {
         Subject = subject;
         ArmFraction = 1f;
+        Zoom = 1f;
+        _zoom = 1f;
     }
 
     public virtual void HandleInput(InputEvent @event) { }
@@ -147,6 +167,7 @@ public abstract class FollowRig : ICameraRig
 
     public Transform3D Evaluate(double delta)
     {
+        _zoom = Mathf.Lerp(_zoom, Mathf.Max(1f, Zoom), Math3D.Damp(ZoomSharpness, delta));
         if (!HasSubject) return Transform3D.Identity;
         var look = Look(Subject!);
         var pivot = Pivot(Subject!, Subject!.Body.GetGlobalTransformInterpolated().Origin);
@@ -180,7 +201,7 @@ public abstract class FollowRig : ICameraRig
 public sealed class FirstPersonRig : FollowRig
 {
     public override string Name => "First person";
-    public override float Fov => 80f;
+    protected override float BaseFov => 80f;
     public override bool HidesSubject => true;
 
     protected override Vector3 Pivot(ICameraSubject subject, Vector3 bodyOrigin) => bodyOrigin + Vector3.Up * subject.EyeHeight;
